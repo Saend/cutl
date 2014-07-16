@@ -38,7 +38,7 @@ void cutl_free(cutl_t *cutl);
 
 // VERBOSITY LEVELS
 #define CUTL_SILENT	CUTL_NOTHING
-#define CUTL_MINIMAL	CUTL_ERROR | CUTL_WARNING | CUTL_FAILURE | CUTL_STATUS
+#define CUTL_MINIMAL	CUTL_ERROR | CUTL_FAILURE | CUTL_WARNING | CUTL_STATUS
 #define CUTL_NORMAL	CUTL_MINIMAL | CUTL_INFO | CUTL_SUITE
 #define CUTL_VERBOSE	CUTL_EVERYTHING
 
@@ -71,9 +71,9 @@ void cutl_assert(cutl_t *cutl, int val, const char *msg, const char *file,
 	);
 	
 // TESTING
-void cutl_setup(cutl_t *cutl, void (*func)(cutl_t*, void*));
+void cutl_before(cutl_t *cutl, void (*func)(cutl_t*, void*));
 
-void cutl_teardown(cutl_t *cutl, void (*func)(cutl_t*, void*));
+void cutl_after(cutl_t *cutl, void (*func)(cutl_t*, void*));
 
 void cutl_run(cutl_t *cutl, const char *name, void (*func)(cutl_t*, void*),
                void *data);
@@ -89,7 +89,7 @@ void cutl_run(cutl_t *cutl, const char *name, void (*func)(cutl_t*, void*),
 
 
 // REPORTING
-void cutl_report(cutl_t *cutl);
+void cutl_summary(cutl_t *cutl);
 
 
 
