@@ -203,7 +203,6 @@ void cutl_fail(cutl_t *cutl, const char* msg, const char*file, int line) {
 	if (VERB_CHECK(cutl, CUTL_FAILURE)) {
 		cutl_prefix(cutl);
 		cutl_message(cutl, msg, CUTL_FAILURE, file, line);
-		cutl_suffix(cutl);
 	}
 	
 	if (cutl->depth > 0) {
@@ -262,22 +261,20 @@ void cutl_run(cutl_t *parent, const char *name, void (*func)(cutl_t*, void*),
 	}
 	
 	
-	if (cutl->failed) {
-		if (!cutl->is_suite) {
+	if (!cutl->is_suite) {
+		if (cutl->failed) {
 			cutl->nb_failed++;
-		}
-	} else {
-		if (!cutl->is_suite) {
+		} else {
 			cutl->nb_passed++;
 		}
+	}
 	
-		if (cutl->is_prefixed
-		    || (!cutl->is_suite && VERB_CHECK(cutl, CUTL_SUCCESS))
-		    || ( cutl->is_suite && VERB_CHECK(cutl, CUTL_SUITE))
-		) {
-			cutl_prefix(cutl);
-			cutl_suffix(cutl);
-		}
+	if (cutl->is_prefixed
+	    || (!cutl->is_suite && VERB_CHECK(cutl, CUTL_SUCCESS))
+	    || ( cutl->is_suite && VERB_CHECK(cutl, CUTL_SUITE))
+	) {
+		cutl_prefix(cutl);
+		cutl_suffix(cutl);
 	}
 	
 	parent->nb_passed += cutl->nb_passed;
