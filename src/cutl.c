@@ -167,31 +167,31 @@ static void cutl_suffix(cutl_t *cutl) {
 
 void cutl_message(cutl_t *cutl, const char *msg, int verbosity, 
                   const char *file, int line) {
-	if (VERB_CHECK(cutl, verbosity)) {
-		cutl_prefix(cutl);
-		cutl_infix(cutl, ":");
-		cutl_indent(cutl);
-		if (cutl->depth > 0) {
-			fprintf(cutl->settings->output, "\t");
-		}
+	if (!VERB_CHECK(cutl, verbosity)) return;
 		
-		if (verbosity & CUTL_ERROR) 
-			fprintf(cutl->settings->output, "ERROR: ");
-		if (verbosity & CUTL_WARNING) 
-			fprintf(cutl->settings->output, "WARN: ");
-		if (verbosity & CUTL_INFO) 
-			fprintf(cutl->settings->output, "INFO: ");
-		if (verbosity & CUTL_FAILURE) 
-			fprintf(cutl->settings->output, "FAIL: ");
-		
-		if (file) {
-			fprintf(
-				cutl->settings->output, "%s:%d: %s\n",
-				file, line, msg
-			);
-		} else {
-			fprintf(cutl->settings->output, "%s\n", msg);
-		}
+	cutl_prefix(cutl);
+	cutl_infix(cutl, ":");
+	cutl_indent(cutl);
+	if (cutl->depth > 0) {
+		fprintf(cutl->settings->output, "\t");
+	}
+	
+	if (verbosity & CUTL_ERROR) 
+		fprintf(cutl->settings->output, "ERROR: ");
+	if (verbosity & CUTL_WARNING) 
+		fprintf(cutl->settings->output, "WARN: ");
+	if (verbosity & CUTL_INFO) 
+		fprintf(cutl->settings->output, "INFO: ");
+	if (verbosity & CUTL_FAILURE) 
+		fprintf(cutl->settings->output, "FAIL: ");
+	
+	if (file) {
+		fprintf(
+			cutl->settings->output, "%s:%d: %s\n",
+			file, line, msg
+		);
+	} else {
+		fprintf(cutl->settings->output, "%s\n", msg);
 	}
 }
 
@@ -298,12 +298,18 @@ void cutl_assert(cutl_t *cutl, int val, const char *msg, const char *file,
 // REPORTING
 
 void cutl_summary(cutl_t *cutl) {
-	if (VERB_CHECK(cutl, CUTL_STATUS)) {
-		cutl_indent(cutl);
-		fprintf(
-			cutl->settings->output, 
-			"Test summary: %d failed, %d passed.\n", 
-			cutl->nb_failed, cutl->nb_passed
-		);
+	if (!VERB_CHECK(cutl, CUTL_STATUS)) return;
+	
+	const char *start_color = "", *stop_color = "";
+	if(getenv("SHELL") != NULL) {
+		start_color = cutl->failed ? "\033[22;31m" : "\033[22;32m";
+		stop_color = "\033[0m";
 	}
+	
+	cutl_indent(cutl);
+	fprintf(
+		cutl->settings->output, "%s%s: %d failed, %d passed.%s\n", 
+		start_color, cutl->name ? cutl->name : "test summary",
+		cutl->nb_failed, cutl->nb_passed, stop_color
+	);
 }
