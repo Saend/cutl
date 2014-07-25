@@ -1,4 +1,5 @@
-/** CUTL - A simple C unit testing library. 
+/* CUTL - A simple C unit testing library. 
+ * AUTHOR: Baptiste "Saend" CEILLIER
  * OVERVIEW:
  * A test is a function containing calls to cutl_assert(), it is run using 
  * cutl_run(). A suite is a test containing calls to cutl_run(). When an

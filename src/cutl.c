@@ -1,4 +1,5 @@
-/**
+/* CUTL - A simple C unit testing library. 
+ * AUTHOR: Baptiste "Saend" CEILLIER
  * LICENCE:
  * Copyright (c) <2014> <Baptiste "Saend" CEILLIER>
  *
