@@ -24,9 +24,12 @@
  */
 #include "cutl.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <setjmp.h>
+
 
 #define VERB_CHECK(cutl, ver) ((cutl)->settings->verbosity & (ver))
 
@@ -87,7 +90,9 @@ void cutl_free(cutl_t *cutl) {
 
 // SETTINGS
 
-void cutl_reset(cutl_t *cutl) {	
+void cutl_reset(cutl_t *cutl) {
+	assert(cutl);
+
 	cutl->failed = false;
 	cutl->nb_failed = 0;
 	cutl->nb_passed = 0;
@@ -98,7 +103,8 @@ void cutl_reset(cutl_t *cutl) {
 
 void cutl_output(cutl_t *cutl, FILE *output) {
 	assert(cutl);
-	
+	assert(output);
+
 	cutl->settings->output = output;
 }
 
@@ -112,8 +118,11 @@ void cutl_verbosity(cutl_t *cutl, int verbosity) {
 // TEST REPORTING
 
 static void cutl_indent(cutl_t *cutl) {
+	assert(cutl);
+
+	int i;
 	if (VERB_CHECK(cutl, CUTL_SUITE)) {
-		for (int i=0; i<cutl->depth-1; ++i) {
+		for (i=0; i<cutl->depth-1; ++i) {
 			fprintf(cutl->settings->output, "\t");
 		}
 	}
@@ -166,8 +175,15 @@ static void cutl_suffix(cutl_t *cutl) {
 
 // LOW-LEVEL
 
-void cutl_message(cutl_t *cutl, const char *msg, int verbosity, 
+void cutl_message_at(cutl_t *cutl, int verbosity, const char *msg,
                   const char *file, int line) {
+	assert(cutl);
+	
+	if (verbosity & CUTL_FAIL) 
+		cutl->failed = true;	
+
+	if (!msg) return;
+
 	if (!VERB_CHECK(cutl, verbosity)) return;
 		
 	cutl_prefix(cutl);
@@ -177,15 +193,16 @@ void cutl_message(cutl_t *cutl, const char *msg, int verbosity,
 		fprintf(cutl->settings->output, "\t");
 	}
 	
-	if (verbosity & CUTL_ERROR) 
-		fprintf(cutl->settings->output, "ERROR: ");
-	if (verbosity & CUTL_WARNING) 
-		fprintf(cutl->settings->output, "WARN: ");
-	if (verbosity & CUTL_INFO) 
-		fprintf(cutl->settings->output, "INFO: ");
-	if (verbosity & CUTL_FAILURE) 
+	if (verbosity & CUTL_FAIL) { 
 		fprintf(cutl->settings->output, "FAIL: ");
-	
+	} else if (verbosity & CUTL_ERROR) {
+		fprintf(cutl->settings->output, "ERROR: ");
+	} else if (verbosity & CUTL_WARN) {
+		fprintf(cutl->settings->output, "WARN: ");
+	} else if (verbosity & CUTL_INFO) {
+		fprintf(cutl->settings->output, "INFO: ");
+	}
+
 	if (file) {
 		fprintf(
 			cutl->settings->output, "%s:%d: %s\n",
@@ -196,15 +213,10 @@ void cutl_message(cutl_t *cutl, const char *msg, int verbosity,
 	}
 }
 
-void cutl_fail(cutl_t *cutl, const char* msg, const char*file, int line) {
+void cutl_fail_at(cutl_t *cutl, const char* msg, const char*file, int line) {
 	assert(cutl);
 	
-	cutl->failed = true;	
-	
-	if (VERB_CHECK(cutl, CUTL_FAILURE)) {
-		cutl_prefix(cutl);
-		cutl_message(cutl, msg, CUTL_FAILURE, file, line);
-	}
+	cutl_message_at(cutl, CUTL_FAIL, msg, file, line);
 	
 	if (cutl->depth > 0) {
 		longjmp(cutl->env, cutl->stage);
@@ -227,7 +239,7 @@ void cutl_after(cutl_t *cutl, void (*func)(cutl_t*, void*)) {
 }
 
 void cutl_run(cutl_t *parent, const char *name, void (*func)(cutl_t*, void*),
-               void *data) {
+              void *data) {
 	assert(parent);
 	
 	parent->is_suite = true;
@@ -244,6 +256,7 @@ void cutl_run(cutl_t *parent, const char *name, void (*func)(cutl_t*, void*),
 	// calls the before function, stops if it fails.
 	// calls the test function, continues if it fails.
 	// calls the after function, stops if it fails.
+	// reminder: setjmp() returns 0 on first call and cutl->stage on jump
 	switch (setjmp(cutl->env)) {
 	case 0:
 		cutl->stage = CUTL_BEFORE;
@@ -251,11 +264,11 @@ void cutl_run(cutl_t *parent, const char *name, void (*func)(cutl_t*, void*),
 			parent->before(cutl, data);
 		}
 		
-		cutl->stage++;
+		cutl->stage++;	// = CUTL_TESTING
 		func(cutl, data);
 	
 	case CUTL_TESTING:
-		cutl->stage++;
+		cutl->stage++;	// = CUTL_AFTER
 		if (parent->after) {
 			parent->after(cutl, data);
 		}
@@ -286,20 +299,26 @@ void cutl_run(cutl_t *parent, const char *name, void (*func)(cutl_t*, void*),
 
 // ASSERT
 
-void cutl_assert(cutl_t *cutl, int val, const char *msg, const char *file,
+void cutl_assert_at(cutl_t *cutl, int val, const char *msg, const char *file,
                  int line) {
 	assert(cutl);
 	
 	if(!val) {
-		cutl_fail(cutl, msg, file, line);
+		cutl_fail_at(cutl, msg, file, line);
 	}
 }
 
 
 // REPORTING
 
-void cutl_summary(cutl_t *cutl) {
-	if (!VERB_CHECK(cutl, CUTL_STATUS)) return;
+int cutl_has_failed(const cutl_t *cutl) {
+	return cutl->nb_failed;
+}
+
+int cutl_summary(cutl_t *cutl) {
+	assert(cutl);
+
+	if (!VERB_CHECK(cutl, CUTL_SUMMARY)) return cutl->nb_failed;
 	
 	const char *start_color = "", *stop_color = "";
 	if(getenv("SHELL") != NULL) {
@@ -309,8 +328,10 @@ void cutl_summary(cutl_t *cutl) {
 	
 	cutl_indent(cutl);
 	fprintf(
-		cutl->settings->output, "%s%s: %d failed, %d passed.%s\n", 
-		start_color, cutl->name ? cutl->name : "test summary",
+		cutl->settings->output, "%s%s summary: %d failed, %d passed.%s\n", 
+		start_color, cutl->name ? cutl->name : "test",
 		cutl->nb_failed, cutl->nb_passed, stop_color
 	);
+	
+	return cutl->nb_failed;
 }
