@@ -1,6 +1,7 @@
 -- LUTL - A simple Lua unit testing library.
 -- AUTHOR: Baptiste "Saend" CEILLIER
 -- OVERVIEW: This is a simple example showing the basic functions.
+-- This file can be run standalone or from C.
 require('lutl')
 
 

@@ -1,34 +1,40 @@
-CC=clang
+CC=gcc
 AR=ar rcs
-CFLAGS=-g
-LDLIBS=
+CFLAGS=-Wall -pedantic -std=c99 -fPIC
 VPATH=src
+TARGETS=cutl.so lutl.so
 
-all: cutl.a lutl.a lutl.so example
+
+all: $(TARGETS)
 
 
 %.o: %.c %.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
-%_pic.o: %.c %.h
-	$(CC) -c $(CFLAGS) -fPIC $< -o $@
+%.so: %.o
+	$(CC) -shared -o $@ $^
 
-%.a: %.o
-	$(AR) $@ $^	
+lutl.o: CFLAGS+=`pkg-config --cflags lua`
 
-
-lutl_pic.o: CFLAGS+=`pkg-config --cflags lua`
-
-lutl.a: cutl.o lutl.o
-
-lutl.so: LDFLAGS+=`pkg-config --libs lua`
-lutl.so: lutl_pic.o cutl_pic.o
+lutl.so: lutl.o cutl.o
 	$(CC) -shared -o $@ $^
 
 
-example: LDFLAGS+=`pkg-config --libs lua`
-example: example.c lutl.o cutl.o
-
-
 clean:
-	rm -rf *.o *.a *.so example
+	rm -rf *.o *.so
+
+
+install: $(TARGETS)
+	install -Dm644 src/cutl.h "$(DESTDIR)/usr/include/cutl.h"
+	install -Dm644 src/lutl.h "$(DESTDIR)/usr/include/lutl.h"
+	install -Dm644 example/c_example.c "$(DESTDIR)/usr/share/cutl/example/c_example.c"
+	install -Dm644 example/lua_example.c "$(DESTDIR)/usr/share/cutl/example/lua_example.c"
+	install -Dm644 example/lua_example.lua "$(DESTDIR)/usr/share/cutl/example/lua_example.lua"
+	install -Dm644 example/makefile "$(DESTDIR)/usr/share/cutl/example/makefile"
+	install -Dm644 cutl.so "$(DESTDIR)/usr/lib/libcutl.so"
+	install -Dm644 lutl.so "$(DESTDIR)/usr/lib/liblutl.so"
+	install -Dm644 lutl.so "$(DESTDIR)/usr/lib/lua/5.3/lutl.so"
+	install -Dm644 LICENSE "$(DESTDIR)/usr/share/licenses/cutl/LICENSE"
+
+
+.PHONY=clean install
