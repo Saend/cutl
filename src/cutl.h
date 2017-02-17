@@ -171,7 +171,7 @@ void cutl_run(cutl_t *cutl, const char *name, void (*func)(cutl_t*, void*),
 	cutl_run((cutl), #func"("#data")", (void (*)(cutl_t*, void*))(func), (data))
 
 #define cutl_suite(cutl, func) 							\
-	cutl_run((cutl), #func, (func), NULL)
+	cutl_run((cutl), #func, (void (*)(cutl_t*, void*))(func), NULL)
 
 
 /** cutl_has_failed() - Check if the current test has failed.
