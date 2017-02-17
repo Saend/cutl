@@ -1,7 +1,7 @@
 # Maintainer: Saend <https://github.com/saend>
 
 pkgname=('cutl')
-pkgver=1.0.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="A simple C and Lua unit testing library."
 arch=('any')
