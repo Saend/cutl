@@ -7,22 +7,19 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#define LUA_USE_APICHECK
-
-#include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
 
 
-static cutl_t *lutl_getcutl(lua_State *L) {
+static Cutl *lutl_getcutl(lua_State *L) {
 	lua_getglobal(L, "lutl");
 	assert(lua_istable(L, -1));
 	
 	lua_pushstring(L, "cutl");
 	lua_gettable(L, -2);
 	
-	cutl_t *cutl = NULL;
-	if (!lua_isnil(L, -1)) {	
+	Cutl *cutl = NULL;
+	if (!lua_isnil(L, -1)) {
 		assert(lua_islightuserdata(L, -1));
 		cutl = lua_touserdata(L, -1);
 	}
@@ -31,7 +28,7 @@ static cutl_t *lutl_getcutl(lua_State *L) {
 	return cutl;
 }
 
-static void lutl_setcutl(lua_State *L, cutl_t *cutl) {
+static void lutl_setcutl(lua_State *L, Cutl *cutl) {
 	lua_getglobal(L, "lutl");
 	assert(lua_istable(L, -1));
 	
@@ -42,7 +39,7 @@ static void lutl_setcutl(lua_State *L, cutl_t *cutl) {
 }
 
 static int lutl_reset(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	
 	if (cutl) {
 		cutl_free(cutl);
@@ -55,7 +52,7 @@ static int lutl_reset(lua_State *L) {
 }
 
 static int lutl_verbosity(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	assert(cutl);
 	
 	luaL_checkinteger(L, 1);
@@ -67,10 +64,10 @@ static int lutl_verbosity(lua_State *L) {
 }
 
 static int lutl_message(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	assert(cutl);
 
-	int verbosity = luaL_checkinteger(L, 1);	
+	int verbosity = luaL_checkinteger(L, 1);
 	luaL_checkstring(L, 2);
 	bool showsrc = lua_toboolean(L, 3);
 	
@@ -106,16 +103,16 @@ static int lutl_warn(lua_State *L) {
 }
 
 static int lutl_fail(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	assert(cutl);
 	
-	luaL_checkstring(L, 1);	
-	luaL_error(L, lua_tostring(L, 1));	
+	luaL_checkstring(L, 1);
+	luaL_error(L, lua_tostring(L, 1));
 	return 0;
 }
 
 static int lutl_assert(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	assert(cutl);
 
 	luaL_checkany(L, 1);
@@ -136,14 +133,14 @@ static int lutl_assert(lua_State *L) {
 		lua_getinfo(L, "Sl", &ar);
 		
 		
-		luaL_error(L, lua_tostring(L, -1));	
+		luaL_error(L, lua_tostring(L, -1));
 	}
 	
 	return 0;
 }
 
-static void lutl_interface(cutl_t *cutl, void *data) {
-	lua_State *L = (lua_State*) data;	
+static void lutl_interface(Cutl *cutl, void *data) {
+	lua_State *L = (lua_State*) data;
 	lutl_setcutl(L, cutl);
 	if (lua_pcall(L, lua_gettop(L)-1, 0, 0)) {
 		cutl_fail_at(cutl, lua_tostring(L, -1), NULL, 0);
@@ -151,7 +148,7 @@ static void lutl_interface(cutl_t *cutl, void *data) {
 }
 
 static int lutl_run(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	assert(cutl);
 	
 	luaL_checkstring(L, 1);
@@ -190,7 +187,7 @@ static int lutl_test(lua_State *L) {
 }
 
 static int lutl_summary(lua_State *L) {
-	cutl_t *cutl = lutl_getcutl(L);
+	Cutl *cutl = lutl_getcutl(L);
 	assert(cutl);
 	
 	cutl_summary(cutl);
@@ -218,9 +215,9 @@ static const struct luaL_Reg functions_array[] = {
 
 typedef struct {
 	const char *name; int value;
-} lutl_constant_t;
+} LutlConstant;
 
-static const lutl_constant_t constants_array[] = {
+static const LutlConstant constants_array[] = {
 	{"NOTHING", 	CUTL_NOTHING},
 	{"ERROR", 	CUTL_ERROR},
 	{"FAIL", 	CUTL_FAIL},
@@ -253,7 +250,7 @@ int luaopen_lutl(lua_State *L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, functions_array, 0);
 	
-	const lutl_constant_t *constant = constants_array;
+	const LutlConstant *constant = constants_array;
 	while (constant->name) {
 		lua_pushstring(L, constant->name);
 		lua_pushinteger(L, constant->value);
@@ -272,7 +269,7 @@ int luaopen_lutl(lua_State *L) {
 
 // TESTING
 
-void lutl_dofile(cutl_t *cutl, const char *filename) {
+void lutl_dofile(Cutl *cutl, const char *filename) {
 	lua_State *L = luaL_newstate();
 	luaL_openlibs(L);
 	luaopen_lutl(L);

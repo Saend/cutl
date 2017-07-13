@@ -28,4 +28,4 @@
 
 int luaopen_lutl(lua_State *L);
 
-void lutl_dofile(cutl_t *cutl, const char *filename);
+void lutl_dofile(Cutl *cutl, const char *filename);
