@@ -25,8 +25,8 @@ clean:
 
 
 install: $(TARGETS)
-	install -Dm644 src/cutl.h "$(DESTDIR)/usr/include/cutl.h"
-	install -Dm644 src/lutl.h "$(DESTDIR)/usr/include/lutl.h"
+	install -Dm644 include/cutl.h "$(DESTDIR)/usr/include/cutl.h"
+	install -Dm644 include/lutl.h "$(DESTDIR)/usr/include/lutl.h"
 	install -Dm644 example/c_example.c "$(DESTDIR)/usr/share/cutl/example/c_example.c"
 	install -Dm644 example/lua_example.c "$(DESTDIR)/usr/share/cutl/example/lua_example.c"
 	install -Dm644 example/lua_example.lua "$(DESTDIR)/usr/share/cutl/example/lua_example.lua"

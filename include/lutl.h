@@ -21,6 +21,11 @@
  */
 #pragma once
 
-#include "cutl.h"
+#include <cutl.h>
+
+#include <lua.h>
+
+
+int luaopen_lutl(lua_State *L);
 
 void lutl_dofile(cutl_t *cutl, const char *filename);

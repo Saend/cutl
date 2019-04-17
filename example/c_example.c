@@ -3,7 +3,7 @@
  * OVERVIEW: This is a simple example showing the basic functions.
  * Can be built with: `cc c_example.c -lcutl`
  */
-#include "cutl.h"
+#include <cutl.h>
 
 
 // TEST EXAMPLE

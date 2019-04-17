@@ -3,7 +3,7 @@
  * OVERVIEW: This is a simple example showing how to run a Lua test from C.
  * Can be built with: `cc c_example.c -llua -lm -llutl`
  */
-#include "lutl.h"
+#include <lutl.h>
 
 
 int main(void) {

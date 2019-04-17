@@ -1,7 +1,7 @@
 /* CUTL - A simple C unit testing library. 
  * AUTHOR: Baptiste "Saend" CEILLIER
  */
-#include "lutl.h"
+#include <lutl.h>
 
 #include <stdio.h>
 #include <stdbool.h>
