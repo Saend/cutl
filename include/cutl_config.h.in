@@ -1,0 +1,58 @@
+#pragma once
+/** \file cutl_config.h
+ * Build time configuration. 
+ */
+
+
+// VERSION MACROS
+
+/** Version string.
+ */
+#define CUTL_VERSION "@VERSION@"
+
+/** Major version number.
+ */
+#define CUTL_VERSION_MAJOR @VERSION_MAJOR@
+
+/** Minor version number.
+*/
+#define CUTL_VERSION_MINOR @VERSION_MINOR@
+
+/** Patch version number.
+*/
+#define CUTL_VERSION_PATCH @VERSION_PATCH@
+
+
+
+// BUILD CONFIGURATION
+
+/** Enables building as a shared library.
+ * If #CUTL_SHARED is defined, then the library is built as a shared library;
+ * otherwise it is built as a static library.
+ */
+#mesondefine CUTL_SHARED
+
+
+
+// FEATURE SELECTION
+
+/** Enables the use of `getopt()`.
+ * If #CUTL_USE_GETOPT is defined at build time, then the POSIX `getopt()`
+ * function is used by cutl_parse_args() to read settings from command-line
+ * arguments.
+ */
+#mesondefine CUTL_USE_GETOPT
+
+
+/** Enables the use of `isatty()`.
+ * If #CUTL_USE_ISATTY and #CUTL_USE_FILENO are defined at build time, then the
+ * POSIX `isatty()` and `fileno()` functions are used by cutl_set_color() to
+ * automatically enable color output on TTYs.
+ */
+#mesondefine CUTL_USE_ISATTY
+
+/** Enables the use of `fileno()`.
+ * See #CUTL_USE_ISATTY.
+ */
+#mesondefine CUTL_USE_FILENO
+

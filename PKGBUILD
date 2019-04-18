@@ -1,17 +1,33 @@
-# Maintainer: Saend <https://github.com/saend>
+# Maintainer: Baptiste "Saend" Ceillier <https://github.com/saend>
 
-pkgname=('cutl')
-pkgver=1.0.1
+pkgname=cutl
+pkgver=2.0.0
 pkgrel=1
 pkgdesc="A simple C and Lua unit testing library."
-arch=('any')
+arch=('i686' 'x86_64')
 url="https://github.com/saend/cutl"
 license=('MIT')
-optdepends=('lua: lua support')
+depends=('lua>=5.3')
+makedepends=(meson)
 source=("$pkgname-$pkgver.tar.gz::$url/archive/$pkgver.tar.gz")
-md5sums=('SKIP')
+sha256sums=('SKIP')
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	meson --prefix /usr --buildtype plain build
+	ninja -C build
+}
 
 package() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR="$pkgdir/" install
+	DESTDIR="$pkgdir" ninja -C build install
+
+	# Lua module
+	mkdir -p "$pkgdir/usr/lib/lua/5.3/"
+	ln -sr "$pkgdir/usr/lib/liblutl.so" "$pkgdir/usr/lib/lua/5.3/lutl.so"
+}
+
+check() {
+	cd "$srcdir/$pkgname-$pkgver"
+	ninja -C build test
 }
