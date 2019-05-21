@@ -622,7 +622,8 @@ int cutl_summary(Cutl *cutl)
 {
 	assert(cutl);
 
-	if (!CUTL_VERBCHECK(cutl, CUTL_SUMMARY)) return cutl->nb_failed;
+	const int nb_failed = cutl_get_failed(cutl);
+	if (!CUTL_VERBCHECK(cutl, CUTL_SUMMARY)) return nb_failed;
 
 	const char *start_color = "", *stop_color = "";
 	if (cutl->has_color) {
@@ -643,13 +644,13 @@ int cutl_summary(Cutl *cutl)
 		fprintf(
 			cutl->settings.output,
 			"%s%s summary: %d failed, %d passed.%s\n",
-			start_color, cutl->name,
-			cutl->nb_failed, cutl->nb_passed,
+			start_color,
+			cutl->name, nb_failed, cutl->nb_passed,
 			stop_color
 		);
 	}
 
-	return cutl->nb_failed;
+	return nb_failed;
 }
 
 
