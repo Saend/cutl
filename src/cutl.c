@@ -24,7 +24,6 @@
 #include <cutl.h>
 
 #include <string.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <setjmp.h>
 #include <ctype.h>
@@ -46,7 +45,55 @@
 
 
 
+// UTILITY FUNCTIONS
+
+CUTL_NORETURN static void cutl_abort(void)
+{
+	write(STDERR_FILENO, "Exiting...\n", 11);
+	exit(EXIT_FAILURE);
+}
+
+
+static void cutl_internal_assert(bool val, const char *func, const char *msg)
+{
+	if (val) return;
+	if (func != NULL && msg != NULL) {
+		fprintf(
+			stderr, "[ERROR %s()] Assertion '%s' failed.\n", func,
+			msg
+		);
+	}
+	cutl_abort();
+}
+
+
+static void *cutl_malloc(size_t size)
+{
+	void *ptr = malloc(size);
+	if (ptr == NULL && size > 0) {
+		perror("[ERROR cutl_malloc()] Memory allocation failed");
+		cutl_abort();
+	}
+	return ptr;
+}
+
+
+static void *cutl_calloc(size_t nmemb, size_t size)
+{
+	void *ptr = calloc(nmemb, size);
+	if (ptr == NULL && nmemb > 0 && size > 0) {
+		perror("[ERROR cutl_calloc()] Memory allocation failed");
+		cutl_abort();
+	}
+	return ptr;
+}
+
+
+
 // UTILITY MACROS
+
+#define assert(val) cutl_internal_assert((val), __func__, #val)
+
 
 #define CUTL_VERBCHECK(cutl, verb) ((cutl)->settings.verbosity & (verb))
 
@@ -106,10 +153,8 @@ Cutl *cutl_new(const char *name)
 {
 	name = name ? name : CUTL_DEFAULT_NAME;
 
-	Cutl *cutl = malloc(sizeof(*cutl));
-	assert(cutl);
-
-	Cutl_Globals *globals = calloc(1, sizeof(*globals));
+	Cutl *cutl = cutl_malloc(sizeof(*cutl));
+	Cutl_Globals *globals = cutl_calloc(1, sizeof(*globals));
 
 	Cutl _cutl = {.name = name, .globals = globals};
 	memcpy(cutl, &_cutl, sizeof(_cutl));
@@ -125,13 +170,11 @@ Cutl *cutl_new(const char *name)
 
 void cutl_free(Cutl *cutl)
 {
-	assert(cutl);
-	assert(cutl->depth == 0);
+	assert(cutl != NULL);
+	assert(cutl->id == 0);
 
 	free(cutl->globals);
-
 	memset(cutl, 0, sizeof(*cutl));
-
 	free(cutl);
 }
 
@@ -141,7 +184,7 @@ void cutl_free(Cutl *cutl)
 
 void cutl_set_output(Cutl *cutl, FILE *output)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->settings.output = output ? output : CUTL_DEFAULT_OUTPUT;
 	cutl_set_color(cutl, cutl->settings.color);
@@ -149,7 +192,7 @@ void cutl_set_output(Cutl *cutl, FILE *output)
 
 FILE *cutl_get_output(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->settings.output;
 }
@@ -157,14 +200,14 @@ FILE *cutl_get_output(const Cutl *cutl)
 
 void cutl_set_verbosity(Cutl *cutl, int verbosity)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->settings.verbosity = verbosity >= 0 ? verbosity : CUTL_NORMAL;
 }
 
 int cutl_get_verbosity(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->settings.verbosity;
 }
@@ -172,7 +215,7 @@ int cutl_get_verbosity(const Cutl *cutl)
 
 void cutl_set_color(Cutl *cutl, int color)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->has_color = color > 0;
 #ifdef CUTL_AUTO_COLOR_ENABLED
@@ -187,7 +230,7 @@ void cutl_set_color(Cutl *cutl, int color)
 
 bool cutl_get_color(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->has_color;
 }
@@ -195,14 +238,14 @@ bool cutl_get_color(const Cutl *cutl)
 
 void cutl_set_indent(Cutl *cutl, const char *indent)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->settings.indent = indent ? indent : CUTL_DEFAULT_INDENT;
 }
 
 const char *cutl_get_indent(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->settings.indent;
 }
@@ -316,8 +359,8 @@ void cutl_parse_args(Cutl *cutl, int argc, char * const argv[])
 				color = false;
 			} else {
 				cutl_message_at(
-					cutl, CUTL_ERROR, NULL, 0,
-					"Invalid argument for option 'c': "
+					cutl, CUTL_ERROR, "cutl_parse_args()",
+					0, "Invalid argument for option 'c': "
 					"'%s'.", optarg
 				);
 				return;
@@ -331,7 +374,7 @@ void cutl_parse_args(Cutl *cutl, int argc, char * const argv[])
 			if (output != NULL) break;
 
 			cutl_message_at(
-				cutl, CUTL_ERROR, NULL, 0,
+				cutl, CUTL_ERROR, "cutl_parse_args()", 0,
 				"Could not open output file '%s' (%s).",
 				optarg, strerror(errno)
 			);
@@ -349,7 +392,7 @@ void cutl_parse_args(Cutl *cutl, int argc, char * const argv[])
 			cutl_interrupt(cutl);
 		default:
 			cutl_message_at(
-				cutl, CUTL_ERROR, NULL, 0,
+				cutl, CUTL_ERROR, "cutl_parse_args()", 0,
 				"Invalid option: '%c'.", *parser.opt
 			);
 			return;
@@ -367,8 +410,6 @@ void cutl_parse_args(Cutl *cutl, int argc, char * const argv[])
 
 static void cutl_indent(const Cutl *cutl)
 {
-	assert(cutl);
-
 	if (CUTL_VERBCHECK(cutl, CUTL_SUITES)) {
 		for (int i=0; i<cutl->depth-1; ++i) {
 			fprintf(
@@ -382,8 +423,6 @@ static void cutl_indent(const Cutl *cutl)
 
 static void cutl_infix(Cutl *cutl, const char *str)
 {
-	assert(cutl);
-
 	if (cutl->name == NULL) return cutl_infix(cutl->parent, str);
 
 	if (cutl->is_infixed || !cutl->is_prefixed || cutl->depth == 0) return;
@@ -395,8 +434,6 @@ static void cutl_infix(Cutl *cutl, const char *str)
 
 static void cutl_prefix(Cutl *cutl)
 {
-	assert(cutl);
-
 	if (cutl->name == NULL) return cutl_prefix(cutl->parent);
 
 	if (cutl->is_prefixed || cutl->depth == 0) return;
@@ -414,8 +451,6 @@ static void cutl_prefix(Cutl *cutl)
 
 static void cutl_suffix(Cutl *cutl)
 {
-	assert(cutl);
-
 	if (cutl->name == NULL) return cutl_suffix(cutl->parent);
 
 	if (cutl->depth == 0) return;
@@ -436,8 +471,8 @@ static void cutl_vmessage_at(
 	Cutl *cutl, int type, const char *file, int line, const char *fmt,
 	va_list ap)
 {
-	assert(cutl);
-	assert(fmt);
+	assert(cutl != NULL);
+	assert(fmt != NULL);
 
 	if (type & CUTL_ERROR) {
 		cutl->error = true;
@@ -453,7 +488,7 @@ static void cutl_vmessage_at(
 	cutl_infix(cutl, ":");
 	cutl_indent(cutl);
 	if (cutl->depth > 0) {
-		//FIXME: What is that?
+		// Extra indentation if test has a parent.
 		fprintf(cutl->settings.output, "%s", cutl->settings.indent);
 	}
 
@@ -489,6 +524,9 @@ static void cutl_vmessage_at(
 void cutl_message_at(
 	Cutl *cutl, int type, const char *file, int line, const char *fmt, ...)
 {
+	assert(cutl != NULL);
+	assert(fmt != NULL);
+
 	va_list ap;
 	va_start(ap, fmt);
 	cutl_vmessage_at(cutl, type, file, line, fmt, ap);
@@ -501,7 +539,7 @@ void cutl_message_at(
 
 void cutl_at_start(Cutl *cutl, Cutl_Func *func, void *data)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->start = func;
 	cutl->start_data = data;
@@ -510,7 +548,7 @@ void cutl_at_start(Cutl *cutl, Cutl_Func *func, void *data)
 
 void cutl_at_end(Cutl *cutl, Cutl_Func *func, void *data)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->end = func;
 	cutl->end_data = data;
@@ -519,7 +557,7 @@ void cutl_at_end(Cutl *cutl, Cutl_Func *func, void *data)
 
 void cutl_at_interrupt(Cutl *cutl, Cutl_Func *func, void *data)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	cutl->interrupt = func;
 	cutl->interrupt_data = data;
@@ -528,9 +566,8 @@ void cutl_at_interrupt(Cutl *cutl, Cutl_Func *func, void *data)
 
 int cutl_run(Cutl *parent, const char *name, Cutl_Func *test, void *data)
 {
-	assert(parent);
-	assert(parent->globals);
-	assert(test);
+	assert(parent != NULL);
+	assert(test != NULL);
 
 	if (parent->error) return 1;
 
@@ -594,13 +631,14 @@ int cutl_run(Cutl *parent, const char *name, Cutl_Func *test, void *data)
 		parent->error = true;
 	}
 
+
 	return cutl_get_failed(cutl);
 }
 
 
 void cutl_interrupt(Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	if (cutl->interrupt) {
 		Cutl_Func* interrupt = cutl->interrupt;
@@ -618,7 +656,8 @@ void cutl_interrupt(Cutl *cutl)
 
 void cutl_fail_at(Cutl *cutl, const char *file, int line, const char *fmt, ...)
 {
-	assert(cutl);
+	assert(cutl != NULL);
+	assert(fmt != NULL);
 
 	va_list ap;
 	va_start(ap, fmt);
@@ -631,7 +670,8 @@ void cutl_fail_at(Cutl *cutl, const char *file, int line, const char *fmt, ...)
 
 void cutl_error_at(Cutl *cutl, const char *file, int line, const char *fmt, ...)
 {
-	assert(cutl);
+	assert(cutl != NULL);
+	assert(fmt != NULL);
 
 	va_list ap;
 	va_start(ap, fmt);
@@ -648,7 +688,8 @@ void cutl_error_at(Cutl *cutl, const char *file, int line, const char *fmt, ...)
 void cutl_assert_at(
 	Cutl *cutl, bool val, const char *file, int line, const char *fmt, ...)
 {
-	assert(cutl);
+	assert(cutl != NULL);
+	assert(fmt != NULL);
 
 	if (!val) {
 		va_list ap;
@@ -664,7 +705,8 @@ void cutl_assert_at(
 void cutl_check_at(
 	Cutl *cutl, bool val, const char *file, int line, const char *fmt, ...)
 {
-	assert(cutl);
+	assert(cutl != NULL);
+	assert(fmt != NULL);
 
 	if (!val) {
 		va_list ap;
@@ -682,7 +724,7 @@ void cutl_check_at(
 
 int cutl_summary(Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	const int nb_failed = cutl_get_failed(cutl);
 	if (!CUTL_VERBCHECK(cutl, CUTL_SUMMARY)) return nb_failed;
@@ -721,7 +763,7 @@ int cutl_summary(Cutl *cutl)
 
 const char *cutl_get_name(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->name;
 }
@@ -729,7 +771,7 @@ const char *cutl_get_name(const Cutl *cutl)
 
 int cutl_get_id(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->id;
 }
@@ -737,7 +779,7 @@ int cutl_get_id(const Cutl *cutl)
 
 int cutl_get_depth(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->depth;
 }
@@ -745,7 +787,7 @@ int cutl_get_depth(const Cutl *cutl)
 
 const Cutl *cutl_get_parent(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->parent;
 }
@@ -753,7 +795,7 @@ const Cutl *cutl_get_parent(const Cutl *cutl)
 
 void *cutl_get_data(const Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->test_data;
 }
@@ -769,7 +811,7 @@ void cutl_set_data(Cutl *cutl, void *data)
 
 int cutl_get_children(Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->nb_children;
 }
@@ -777,7 +819,7 @@ int cutl_get_children(Cutl *cutl)
 
 int cutl_get_passed(Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	return cutl->nb_passed;
 }
@@ -785,7 +827,7 @@ int cutl_get_passed(Cutl *cutl)
 
 int cutl_get_failed(Cutl *cutl)
 {
-	assert(cutl);
+	assert(cutl != NULL);
 
 	if (cutl->failed && cutl->nb_failed > 0) {
 		return cutl->nb_failed;
@@ -796,6 +838,8 @@ int cutl_get_failed(Cutl *cutl)
 
 bool cutl_get_error(Cutl *cutl)
 {
+	assert(cutl != NULL);
+
 	return cutl->error;
 }
 

@@ -13,6 +13,11 @@
  * cutl_run() using `longjmp()`, and the test and any parent suites are
  * considered failed.
  *
+ * Programmer errors (e.g. passing NULL to an explicitly non-NULL parameter)
+ * are printed on `stderr` and cause `exit(EXIT_FAILURE)` to be called. Runtime
+ * errors reported through cutl_error_at() cause the rest of the test sequence
+ * to be canceled.
+ *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * // This simple example can be compiled with `cc simple.c -lcutl`
  * #include <cutl.h>
