@@ -246,18 +246,18 @@ CUTL_API const char *cutl_get_indent(const Cutl *cutl);
 
 
 /** Reads the settings from the command-line arguments.
- * If #CUTL_PARSE_ARGS_ENABLED was defined at build time, then this function
- * uses `getopt()` to parse different command-line options.
- * Theses options include a `-h` option that describes the other available
- * options on the standard output, and immediately interrupts the test.
- * Missing or invalid arguments are reported as errors, aborting the test.
- * The `optind` variable (defined in `unistd.h`) is not reset before or after
- * parsing.
+ * Parses various short command-line options, including a `-h` option that
+ * describes on the standard output the other available options and immediately
+ * interrupts the test.
  *
- * If #CUTL_PARSE_ARGS_ENABLED was not defined at built time, then this
- * function does nothing.
+ * If a non-option argument is encountered (any string not starting with '-'
+ * followed by an alphanumerical character), then parsing is stopped. Invalid
+ * options and missing or invalid arguments are reported as errors using the
+ * current input and verbosity.
+ *
+ * Output files opened through this function are not automatically closed.
  */
-CUTL_API void cutl_parse_args(Cutl *cutl, int argc, char *argv[]);
+CUTL_API void cutl_parse_args(Cutl *cutl, int argc, char * const argv[]);
 
 
 

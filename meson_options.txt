@@ -7,8 +7,3 @@ option(
   'auto_color', type : 'feature', value : 'enabled',
   description : 'Guess output color support with isatty()'
 )
-
-option(
-  'parse_args', type : 'feature', value : 'enabled',
-  description : 'Parse command-line options with getopt()'
-)

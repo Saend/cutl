@@ -1,6 +1,6 @@
 #pragma once
 /** \file cutl_config.h
- * Build time configuration. 
+ * Build time configuration.
  */
 
 
@@ -15,11 +15,11 @@
 #define CUTL_VERSION_MAJOR @VERSION_MAJOR@
 
 /** Minor version number.
-*/
+ */
 #define CUTL_VERSION_MINOR @VERSION_MINOR@
 
 /** Patch version number.
-*/
+ */
 #define CUTL_VERSION_PATCH @VERSION_PATCH@
 
 
@@ -35,20 +35,6 @@
 
 
 // FEATURE SELECTION
-
-/** Enables the use of POSIX `getopt()`.
- */
-#mesondefine CUTL_USE_GETOPT
-
-
-/** Indicates that cutl_parse_args() is enabled.
- * This feature needs `getopt()`.
- */
-#ifdef CUTL_USE_GETOPT
-# define CUTL_PARSE_ARGS_ENABLED
-#endif
-
-
 
 /** Enables the use of POSIX `isatty()`.
  */
