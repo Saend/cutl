@@ -102,6 +102,12 @@ endif
 
 
 
+# TESTS
+
+subdir('tests')
+
+
+
 # INSTALL
 
 install_headers('include/cutl.h')
