@@ -11,6 +11,8 @@ pkg = import('pkgconfig')
 
 cc = meson.get_compiler('c')
 version = meson.project_version().split('.')
+auto_color = not get_option('auto_color').disabled()
+parse_args = not get_option('parse_args').disabled()
 
 config_dat = configuration_data({
   'VERSION' : meson.project_version(),
@@ -18,9 +20,9 @@ config_dat = configuration_data({
   'VERSION_MINOR' : version[1],
   'VERSION_PATCH' : version[2],
   'CUTL_SHARED' : get_option('default_library') != 'static',
-  'CUTL_USE_ISATTY' : cc.has_function('isatty'),
-  'CUTL_USE_FILENO' : cc.has_function('fileno'),
-  'CUTL_USE_GETOPT' : cc.has_function('getopt'),
+  'CUTL_USE_ISATTY' : cc.has_function('isatty') and auto_color,
+  'CUTL_USE_FILENO' : cc.has_function('fileno') and auto_color,
+  'CUTL_USE_GETOPT' : cc.has_function('getopt') and parse_args,
 })
 
 config_h = configure_file(

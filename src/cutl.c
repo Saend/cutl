@@ -5,6 +5,26 @@
  */
 
 
+// FEATURE REQUIREMENTS
+
+#include <cutl_config.h>
+
+
+#ifdef CUTL_PARSE_ARGS_ENABLED
+# define _POSIX_C_SOURCE 2
+# include <unistd.h>
+# include <errno.h> // Needed to display error message for `-o` option.
+#endif
+
+
+#ifdef CUTL_AUTO_COLOR_ENABLED
+# ifndef _POSIX_C_SOURCE
+#  define _POSIX_C_SOURCE 1
+# endif
+# include <unistd.h>
+#endif
+
+
 
 // INCLUDES
 
@@ -159,6 +179,14 @@ void cutl_set_color(Cutl *cutl, int color)
 {
 	assert(cutl);
 
+	cutl->has_color = color > 0;
+#ifdef CUTL_AUTO_COLOR_ENABLED
+	if (color < 0) {
+		cutl->has_color = isatty(fileno(cutl->settings.output))
+			&& getenv("TERM") != NULL;
+	}
+#endif
+
 	cutl->settings.color = color;
 }
 
@@ -185,6 +213,93 @@ const char *cutl_get_indent(const Cutl *cutl)
 }
 
 
+void cutl_parse_args(Cutl *cutl, int argc, char *argv[])
+{
+#ifdef CUTL_PARSE_ARGS_ENABLED
+	int opt;
+	int verbosity = cutl_get_verbosity(cutl);
+	const char *color = NULL;
+	const char *filename = NULL;
+	bool show_help = false;
+	while ((opt = getopt(argc, argv, ":vmsc:o:h")) != -1) {
+		switch (opt) {
+		case 'v':
+			verbosity = CUTL_VERBOSE;
+			break;
+		case 'm':
+			verbosity = CUTL_MINIMAL;
+			break;
+		case 's':
+			verbosity = CUTL_SILENT;
+			break;
+		case 'c':
+			color = optarg;
+			break;
+		case 'o':
+			filename = optarg;
+			break;
+		case 'h':
+			show_help = true;
+			break;
+		case ':':
+			cutl_message_at(
+				cutl, CUTL_ERROR, NULL, 0,
+				"Missing argument for option '%c'.",
+				optopt, optarg
+			);
+			break;
+		case '?': // skip unknown options
+		default:
+			break;
+		}
+	}
+
+	if (show_help) {
+		printf("Usage: %s [options]\n", argv[0]);
+		printf("Options:\n");
+		printf("  -v               Verbose output.\n");
+		printf("  -m               Minimal output.\n");
+		printf("  -s               Silent output.\n");
+		printf("  -c <auto|on|off> Colored output.\n");
+		printf("  -o <file>        Output file.\n");
+		printf("  -h               Print this message and exit.\n");
+		printf("CUTL version: %s\n", CUTL_VERSION);
+		return cutl_interrupt(cutl);
+	}
+
+	if (filename != NULL) {
+		FILE *out = fopen(filename, "w+");
+		if (out) {
+			cutl_set_output(cutl, out);
+		} else {
+			cutl_message_at(
+				cutl, CUTL_ERROR, NULL, 0,
+				"Could not open output file '%s' (%s).",
+				filename, strerror(errno)
+			);
+		}
+	}
+
+	if (color != NULL) {
+		if (strcmp(color, "auto") == 0) {
+			cutl_set_color(cutl, -1);
+		} else if (strcmp(color, "on") == 0) {
+			cutl_set_color(cutl, true);
+		} else if (strcmp(color, "off") == 0) {
+			cutl_set_color(cutl, false);
+		} else {
+			cutl_message_at(
+				cutl, CUTL_ERROR, NULL, 0,
+				"Invalid argument for option 'c': '%s'.", color
+			);
+		}
+	}
+
+	cutl_set_verbosity(cutl, verbosity);
+#endif
+}
+
+
 
 // MESSAGING
 
@@ -207,6 +322,7 @@ static void cutl_infix(Cutl *cutl, const char *str)
 {
 	assert(cutl);
 
+	if (cutl->name == NULL) return cutl_infix(cutl->parent, str);
 
 	if (cutl->is_infixed || !cutl->is_prefixed || cutl->depth == 0) return;
 
@@ -218,6 +334,8 @@ static void cutl_infix(Cutl *cutl, const char *str)
 static void cutl_prefix(Cutl *cutl)
 {
 	assert(cutl);
+
+	if (cutl->name == NULL) return cutl_prefix(cutl->parent);
 
 	if (cutl->is_prefixed || cutl->depth == 0) return;
 
@@ -235,6 +353,8 @@ static void cutl_prefix(Cutl *cutl)
 static void cutl_suffix(Cutl *cutl)
 {
 	assert(cutl);
+
+	if (cutl->name == NULL) return cutl_suffix(cutl->parent);
 
 	if (cutl->depth == 0) return;
 
@@ -505,7 +625,7 @@ int cutl_summary(Cutl *cutl)
 	if (!CUTL_VERBCHECK(cutl, CUTL_SUMMARY)) return cutl->nb_failed;
 
 	const char *start_color = "", *stop_color = "";
-	if (cutl->settings.color) {
+	if (cutl->has_color) {
 		start_color = (cutl->failed || cutl->error)
 			? "\033" CUTL_FAIL_COLOR
 			: "\033" CUTL_PASS_COLOR;

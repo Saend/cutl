@@ -36,23 +36,33 @@
 
 // FEATURE SELECTION
 
-/** Enables the use of `getopt()`.
- * If #CUTL_USE_GETOPT is defined at build time, then the POSIX `getopt()`
- * function is used by cutl_parse_args() to read settings from command-line
- * arguments.
+/** Enables the use of POSIX `getopt()`.
  */
 #mesondefine CUTL_USE_GETOPT
 
 
-/** Enables the use of `isatty()`.
- * If #CUTL_USE_ISATTY and #CUTL_USE_FILENO are defined at build time, then the
- * POSIX `isatty()` and `fileno()` functions are used by cutl_set_color() to
- * automatically enable color output on TTYs.
+/** Indicates that cutl_parse_args() is enabled.
+ * This feature needs `getopt()`.
+ */
+#ifdef CUTL_USE_GETOPT
+# define CUTL_PARSE_ARGS_ENABLED
+#endif
+
+
+
+/** Enables the use of POSIX `isatty()`.
  */
 #mesondefine CUTL_USE_ISATTY
 
-/** Enables the use of `fileno()`.
- * See #CUTL_USE_ISATTY.
+/** Enables the use of POSIX `fileno()`.
  */
 #mesondefine CUTL_USE_FILENO
+
+
+/** Indicates that color autodetection in cutl_set_color() is enabled.
+ * This feature needs `isatty()` and `fileno()`.
+ */
+#if defined(CUTL_USE_ISATTY) && defined(CUTL_USE_FILENO)
+# define CUTL_AUTO_COLOR_ENABLED
+#endif
 
